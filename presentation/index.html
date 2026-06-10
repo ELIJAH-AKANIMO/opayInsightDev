@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian AI - Presentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #38bdf8;
+            --accent-secondary: #818cf8;
+            --danger: #fb7185;
+            --success: #34d399;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .slides-container {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            height: 100%;
+            width: 100%;
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            position: relative;
+            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.1), transparent 40%);
+        }
+
+        .content {
+            max-width: 1200px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+
+        h2 {
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        p {
+            font-size: 1.8rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 900px;
+        }
+
+        .highlight {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            margin-top: 3rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            border-radius: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-primary);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .card p {
+            font-size: 1.2rem;
+            margin-bottom: 0;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background: var(--accent-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Slide Number Logic */
+        .slide-number {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            opacity: 0.5;
+        }
+
+        ul {
+            list-style: none;
+            margin-top: 2rem;
+        }
+
+        li {
+            font-size: 1.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        li::before {
+            content: "→";
+            color: var(--accent-secondary);
+            margin-right: 1rem;
+            font-weight: 800;
+        }
+
+        .visual-container {
+            margin-top: 3rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--accent-primary);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tech Stack Grid */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .tech-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="slides-container" id="container">
+
+        <!-- Slide 1: Title -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Hackathon 2026</span>
+                <h1>Graph-Powered Fraud Intelligence System</h1>
+                <h2>AI-Powered Transaction Monitoring & Financial Crime Detection System</h2>
+                <p>Detecting the Invisible through <span class="highlight">Graph Forensics</span> and <span
+                        class="highlight">Explainable Intelligence</span>.</p>
+            </div>
+            <div class="slide-number">1 / 10</div>
+        </div>
+
+        <!-- Slide 2: The Challenge -->
+        <div class="slide">
+            <div class="content">
+                <h2>The Information Overload Challenge</h2>
+                <p>Financial crime teams are drowning in alerts.</p>
+                <div class="card-grid">
+                    <div class="card">
+                        <span class="card-icon">📉</span>
+                        <h3>High False Positives</h3>
+                        <p>Traditional rule-based systems flag too many legitimate transactions, wasting valuable
+                            analyst time.</p>
+                    </div>
+                    <div class="card">
+                        <span class="card-icon">🕸️</span>
+                        <h3>Complex Fraud Rings</h3>
+                        <p>Fraudsters don't act alone. Single-transaction analysis misses coordinated attacks across
+                            merchants.</p>
+                    </div>
+                    <div class="card">
+                        <span class="card-icon">🌑</span>
+                        <h3>Black Box AI</h3>
+                        <p>"Computer says no" isn't enough. Analysts need to know <em>why</em> an alert was triggered to
+                            trust it.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">2 / 10</div>
+        </div>
+
+        <!-- Slide 3: The Solution Vision -->
+        <div class="slide">
+            <div class="content">
+                <h2>Our Solution: Context-Aware Intelligence</h2>
+                <p>We moved beyond simple rows of data to richer, connected insights.</p>
+                <div class="mermaid"
+                    style="display: flex; justify-content: center; background: rgba(0,0,0,0.3); padding: 2rem; border-radius: 12px;">
+graph LR
+    %% Styling
+    classDef input fill:#1e293b,stroke:#cbd5e1,color:#fff;
+    classDef ml fill:#f59e0b,stroke:#b45309,color:#fff;
+    classDef dl fill:#8b5cf6,stroke:#5b21b6,color:#fff;
+    classDef logic fill:#10b981,stroke:#047857,color:#fff;
+    classDef output fill:#3b82f6,stroke:#1d4ed8,color:#fff;
+
+    %% Nodes
+    subgraph Infrastructure
+        GPU[GPU Acceleration<br/>(CUDA)]:::logic
+        API[FastAPI Streaming<br/>Server]:::logic
+    end
+
+    subgraph Data [Data Input]
+        Trx[Transaction Stream]:::input
+        Feat[Feature Engineering<br/>(Rolling, Graph)]:::input
+    end
+
+    subgraph Layer1 [Layer 1: Hybrid Detection]
+        LGBM[LightGBM Model<br/>(Probability)]:::ml
+        LSTM[LSTM Autoencoder<br/>w/ Attention]:::dl
+    end
+
+    subgraph Layer2 [Layer 2: Decision]
+        Hybrid((Hybrid Score<br/>60% ML + 40% DL)):::logic
+        Rules[Rule Checks]:::logic
+    end
+
+    subgraph Layer3 [Layer 3: Reasoning]
+        Graph[Graph Network<br/>Forensics]:::output
+        SHAP[SHAP<br/>Explainability]:::output
+        LLM[LLM Analyst<br/>(Gemini/GPT)]:::output
+    end
+
+    Dashboard[Streamlit Dashboard<br/>User Interface]:::output
+
+    %% Edges
+    Trx --> Feat
+    Feat --> LGBM
+    Feat --> LSTM
+    
+    LGBM --> Hybrid
+    LSTM --> Hybrid
+    
+    Hybrid --> Rules
+    Rules --> Dashboard
+    
+    Hybrid -.-> LLM
+    Hybrid -.-> SHAP
+    Hybrid -.-> Graph
+    
+    LLM --> Dashboard
+    SHAP --> Dashboard
+    Graph --> Dashboard
+</div>
+            </div>
+            <div class="slide-number">3 / 10</div>
+        </div>
+
+        <!-- Mermaid Scripts -->
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+        </script>
+
+        <!-- Slide 4: Methodology & Algorithms (NEW) -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Methodology</span>
+                <h2>AI Engine & Algorithms</h2>
+                <p>A robust pipeline built on Gradient Boosting and Graph Theory.</p>
+                <div class="card-grid">
+                    <div class="card">
+                        <span class="card-icon">🤖</span>
+                        <h3>LightGBM Model</h3>
+                        <p>Selected for high efficiency on tabular data and ability to handle large datasets. Trained on
+                            <strong>rolling aggregate features</strong>.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <span class="card-icon">🔗</span>
+                        <h3>Graph Algorithms</h3>
+                        <p><strong>Connected Components</strong> & <strong>Degree Centrality</strong> are used to
+                            identify nodes acting as hubs in fraud rings.</p>
+                    </div>
+                    <div class="card">
+                        <span class="card-icon">⚖️</span>
+                        <h3>Data Balancing</h3>
+                        <p>Handles class imbalance using <code>class_weight='balanced'</code> to ensure rare fraud cases
+                            are detected.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">4 / 10</div>
+        </div>
+
+        <!-- Slide 5: Tech Stack & Requirements (NEW) -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Requirements</span>
+                <h2>Technology Stack</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <h3>🛠️ Core Software</h3>
+                        <ul>
+                            <li><strong>Python 3.9+</strong>: Core logic</li>
+                            <li><strong>FastAPI</strong>: Real-time Streaming API</li>
+                            <li><strong>Streamlit</strong>: Interactive Web UI</li>
+                        </ul>
+                    </div>
+                    <div class="tech-item">
+                        <h3>🧠 AI & Vis</h3>
+                        <ul>
+                            <li><strong>LightGBM</strong>: ML Classifier</li>
+                            <li><strong>PyTorch (CUDA)</strong>: GPU-Accelerated DL</li>
+                            <li><strong>SHAP</strong>: Explainability Engine</li>
+                            <li><strong>Altair</strong>: Interactive Charts</li>
+                        </ul>
+                    </div>
+                    <div class="tech-item">
+                        <h3>💻 Hardware</h3>
+                        <ul>
+                            <li><strong>GPU</strong>: NVIDIA CUDA (Recommended)</li>
+                            <li><strong>CPU</strong>: Multi-core Fallback</li>
+                            <li><strong>RAM</strong>: 8GB+ (For In-Memory Graph)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">5 / 10</div>
+        </div>
+
+        <!-- Slide 6: Feature - Network Forensics -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Innovation 1</span>
+                <h2>Network Forensics</h2>
+                <p>Visualizing the connections that matter.</p>
+                <div class="card-grid">
+                    <div class="card" style="border-left: 4px solid var(--danger);">
+                        <h3>Graph Visualization</h3>
+                        <p>Instantly see if a card is connected to a "bad" merchant cluster.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Neighborhood Analysis</h3>
+                        <p>Zoom into specific transactions to see their immediate risk network (1-hop connections).</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">6 / 10</div>
+        </div>
+
+        <!-- Slide 7: Feature - Explainability -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Innovation 2</span>
+                <h2>Explainable Trust (SHAP)</h2>
+                <p>Building trust between Human and Machine.</p>
+                <div class="card-grid">
+                    <div class="card" style="border-left: 4px solid var(--success);">
+                        <h3>The "Why" Factor</h3>
+                        <p>Every alert comes with a SHAP breakdown. "Is it the amount? The location? The frequency?"</p>
+                    </div>
+                    <div class="card">
+                        <h3>Analyst Empowerment</h3>
+                        <p>Analysts can validate the AI's logic instantly.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">7 / 11</div>
+        </div>
+
+        <!-- Slide 8: LLM Second Layer (NEW) -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Innovation 3</span>
+                <h2>LLM-Powered Contextual Intelligence</h2>
+                <p>Adding a second reasoning layer for deeper insights.</p>
+                <div class="card-grid">
+                    <div class="card" style="border-left: 4px solid var(--accent-secondary);">
+                        <h3>Natural Language Analysis</h3>
+                        <p>LLM generates executive summaries, identifies critical patterns, and explains fraud in plain
+                            language.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Contextual Reasoning</h3>
+                        <p>Synthesizes LightGBM scores, SHAP features, and graph signals into actionable
+                            recommendations.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Investigation Assistant</h3>
+                        <p>Answers "Which alert should I prioritize?" and "What patterns am I seeing today?"</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">8 / 11</div>
+        </div>
+
+        <!-- Slide 9: Layer 3 - Deep Learning (NEW) -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">Innovation 4</span>
+                <h2>Deep Learning Anomaly Detection</h2>
+                <p>Catching complex sequential patterns that tree models miss.</p>
+                <div class="card-grid">
+                    <div class="card" style="border-left: 4px solid var(--accent);">
+                        <h3>Sequential Autoencoder</h3>
+                        <p>LSTM network learns the "normal" sequence of transactions with <strong>Attention
+                                Mechanism</strong> to focus on critical events.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Behavioral Anomalies</h3>
+                        <p>Detects unusual ordering (e.g., small test auth -> large purchase) even if amounts are
+                            normal.</p>
+                    </div>
+                    <div class="card">
+                        <h3>High Performance</h3>
+                        <p><strong>GPU-Accelerated</strong> inference (5x faster) with real-time streaming capabilities.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">9 / 12</div>
+        </div>
+
+        <!-- Slide 10: User Experience -->
+        <div class="slide">
+            <div class="content">
+                <span class="badge">UX Design</span>
+                <h2>Actionable Insights</h2>
+                <p>A premium interface designed for focus and clarity.</p>
+                <ul>
+                    <li><strong>Descriptive Analytics</strong>: Peak hours, risk hotspots, and amount distributions.
+                    </li>
+                    <li><strong>Dark Mode & Glassmorphism</strong>: Reduced eye strain.</li>
+                    <li><strong>Seamless Workflow</strong>: Upload -> Analyze -> Visualize -> Review.</li>
+                </ul>
+            </div>
+            <div class="slide-number">10 / 12</div>
+        </div>
+
+        <!-- Slide 11: Business Impact -->
+        <div class="slide">
+            <div class="content">
+                <h2>Business Impact</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <span class="card-icon">⚡</span>
+                        <h3>Speed</h3>
+                        <p>50% reduction in investigation time via visual graph tools.</p>
+                    </div>
+                    <div class="card">
+                        <span class="card-icon">🛡️</span>
+                        <h3>Precision</h3>
+                        <p>Catching sophisticated fraud rings that rule-based systems miss.</p>
+                    </div>
+                    <div class="card">
+                        <span class="card-icon">🤝</span>
+                        <h3>Trust</h3>
+                        <p>Transparent AI ensures compliance and simplifies audits.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">11 / 12</div>
+        </div>
+
+        <!-- Slide 12: Closing -->
+        <div class="slide">
+            <div class="content" style="text-align: center;">
+                <h1>Thank You</h1>
+                <p>Ready to detect the invisible.</p>
+                <div style="margin-top: 2rem;">
+                    <button class="btn" style="background: var(--accent-primary);" onclick="location.reload()">Replay
+                        Presentation</button>
+                </div>
+            </div>
+            <div class="slide-number">12 / 12</div>
+        </div>
+
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="prevSlide()">← Prev</button>
+        <button class="btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const container = document.getElementById('container');
+        const slides = document.querySelectorAll('.slide');
+        const progress = document.getElementById('progress');
+
+        function updateSlide() {
+            container.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            progress.style.width = `${((currentSlide + 1) / slides.length) * 100}%`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // Initialize progress
+        updateSlide();
+    </script>
+</body>
+
+</html>

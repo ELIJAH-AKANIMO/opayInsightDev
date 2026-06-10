@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment Variables - IMPORTANT: Keep API keys private!
+.env
+.env.local
+
+# Data
+*.db
+*.sqlite
+*.csv
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Logs
+*.log
+.venv/
+.venvph/
+_pycache_/
+*.pyc
+data/
+models/

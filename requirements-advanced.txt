@@ -1,0 +1,12 @@
+# Advanced Deep Learning Features - Additional Requirements
+
+# FastAPI for streaming endpoint
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.0
+
+# PyTorch (already in requirements, but ensuring version)
+# torch>=2.0.0  # Already installed
+
+# For model serialization
+# joblib  # Already installed
