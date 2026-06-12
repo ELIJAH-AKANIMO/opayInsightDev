@@ -49,3 +49,4 @@ models/
 !data/
 data/*
 !data/enriched_sample.csv
+!data/enriched_sample2.csv

@@ -43,6 +43,42 @@ import os as _os
 MIN_FEATURE_TRIM_ENABLED = True if _os.environ.get('MIN_FEATURE_TRIM_ENABLED', '1') not in ('0', 'false', 'False') else False
 
 
+def fallback_probabilities(df: pd.DataFrame) -> np.ndarray:
+    """Deterministic demo scorer used when trained model artifacts are unavailable."""
+    if df.empty:
+        return np.array([])
+
+    amt = pd.to_numeric(df.get('amt', 0), errors='coerce').fillna(0).astype(float)
+    amt_score = np.clip(np.log1p(amt) / np.log1p(1000), 0, 1)
+
+    category = df.get('category')
+    if category is None:
+        category_score = np.zeros(len(df))
+    else:
+        risky_categories = {'shopping_net', 'grocery_pos', 'misc_net'}
+        category_score = category.astype(str).str.lower().isin(risky_categories).astype(float).to_numpy()
+
+    velocity_cols = [
+        'card_7d_tx_count',
+        'card_30d_tx_count',
+        'merch_7d_tx_count',
+        'merch_30d_tx_count',
+    ]
+    velocity_parts = []
+    for col in velocity_cols:
+        if col in df.columns:
+            velocity_parts.append(pd.to_numeric(df[col], errors='coerce').fillna(0).astype(float))
+
+    if velocity_parts:
+        velocity = pd.concat(velocity_parts, axis=1).max(axis=1)
+        velocity_score = np.clip(velocity / 10, 0, 1).to_numpy()
+    else:
+        velocity_score = np.zeros(len(df))
+
+    probs = 0.12 + (0.52 * amt_score.to_numpy()) + (0.18 * category_score) + (0.18 * velocity_score)
+    return np.clip(probs, 0.01, 0.99)
+
+
 @app.on_event('startup')
 def load_models():
     global MODEL, SCALER, MODEL_FEATURES
@@ -238,9 +274,9 @@ async def score_csv(file: Optional[UploadFile] = File(None), explain: bool = Que
 
         X, df_enr = align_and_prepare(df)
         if MODEL is None:
-            raise HTTPException(status_code=500, detail='Model not loaded on server')
-
-        probs = MODEL.predict_proba(X)[:, 1]
+            probs = fallback_probabilities(df_enr)
+        else:
+            probs = MODEL.predict_proba(X)[:, 1]
         preds = (probs >= 0.5).astype(int)
 
         results = []
@@ -288,13 +324,13 @@ async def score_single_tx(payload: dict, explain: bool = Query(False), trim: boo
         df = pd.DataFrame([payload])
         # use lightweight aligner for single tx to keep latency low; trim can override config
         X, df_enr = align_and_prepare_single(df, trim=trim)
-        if MODEL is None:
-            raise HTTPException(status_code=500, detail='Model not loaded on server')
-
         if len(X) == 0:
             raise HTTPException(status_code=400, detail='No numeric features available after alignment')
 
-        probs = MODEL.predict_proba(X)[:, 1]
+        if MODEL is None:
+            probs = fallback_probabilities(df_enr)
+        else:
+            probs = MODEL.predict_proba(X)[:, 1]
         p = float(probs[0])
         pred = int(p >= 0.5)
         result = {'index': 0, 'proba': p, 'pred': pred}

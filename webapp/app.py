@@ -18,6 +18,20 @@ except ImportError:
     import actions_db
 
 
+def get_api_base_url():
+    """Resolve the fraud API URL from Streamlit secrets or environment."""
+    try:
+        configured_url = st.secrets.get("API_BASE_URL")
+    except Exception:
+        configured_url = None
+
+    configured_url = configured_url or os.environ.get("API_BASE_URL")
+    if not configured_url:
+        return None
+
+    return configured_url.rstrip("/")
+
+
 def clear_custom_sidebar_toggle():
     """Remove stale custom sidebar state from earlier app versions."""
     components.html(
@@ -149,7 +163,7 @@ if app_mode == "Reports Explorer":
 # Data Loading
 df = None
 if use_sample:
-    sample_path = os.environ.get('SAMPLE_DATA_PATH', os.path.join('data', 'enriched_sample.csv'))
+    sample_path = os.environ.get('SAMPLE_DATA_PATH', os.path.join('data', 'enriched_sample2.csv'))
     if os.path.exists(sample_path):
         df = pd.read_csv(sample_path)
     else:
@@ -223,7 +237,21 @@ def run_analysis(df_input):
         add_log("Establishing secure handshake with API gateway...", "info")
         progress_bar.progress(45)
         
-        api_url = 'http://localhost:8001/score_file'
+        api_base_url = get_api_base_url()
+        if not api_base_url:
+            error_msg = (
+                "API_BASE_URL is not configured. Add your Render backend URL to "
+                "Streamlit secrets, for example: API_BASE_URL=\"https://your-service.onrender.com\""
+            )
+            add_log("Remote API URL missing.", "warning")
+            progress_bar.progress(100)
+            status_container.empty()
+            progress_bar.empty()
+            log_container.empty()
+            st.error(error_msg)
+            return
+
+        api_url = f"{api_base_url}/score"
         try:
             files = {'file': ('upload.csv', df.to_csv(index=False).encode())}
             params = {'explain': str(explain).lower(), 'top_k': str(top_n)}
