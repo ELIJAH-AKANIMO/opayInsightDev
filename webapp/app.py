@@ -7,6 +7,7 @@ import numpy as np
 import os
 import time
 import altair as alt
+import streamlit.components.v1 as components
 
 # Attempt import from webapp package; fallback for local run
 try:
@@ -17,7 +18,70 @@ except ImportError:
     import actions_db
 
 
+def clear_custom_sidebar_toggle():
+    """Remove stale custom sidebar state from earlier app versions."""
+    components.html(
+        """
+        <script>
+        const doc = window.parent.document;
+        doc.getElementById('graphite-sidebar-toggle')?.remove();
+        doc.getElementById('graphite-sidebar-toggle-style')?.remove();
+        doc.getElementById('graphite-sidebar-opener')?.remove();
+        doc.getElementById('graphite-sidebar-opener-style')?.remove();
+        doc.body.classList.remove('graphite-sidebar-closed');
+        window.parent.localStorage.removeItem('graphite-sidebar-closed');
 
+        const sidebarIsOpen = () => {
+            const sidebar = doc.querySelector('[data-testid="stSidebar"]');
+            if (!sidebar) {
+                return false;
+            }
+
+            const rect = sidebar.getBoundingClientRect();
+            const styles = window.parent.getComputedStyle(sidebar);
+            return rect.width > 80 &&
+                rect.right > 80 &&
+                styles.display !== 'none' &&
+                styles.visibility !== 'hidden' &&
+                styles.opacity !== '0';
+        };
+
+        const restoreNativeSidebar = () => {
+            if (sidebarIsOpen()) {
+                return;
+            }
+
+            const controls = Array.from(doc.querySelectorAll('button, [role="button"]'));
+            const opener = controls.find((control) => {
+                const label = [
+                    control.getAttribute('aria-label'),
+                    control.getAttribute('title'),
+                    control.innerText
+                ].filter(Boolean).join(' ').toLowerCase();
+
+                return label.includes('open') && label.includes('sidebar');
+            }) || doc.querySelector('[data-testid="collapsedControl"]');
+
+            if (opener) {
+                opener.click();
+            }
+        };
+
+        window.setTimeout(restoreNativeSidebar, 100);
+        window.setTimeout(restoreNativeSidebar, 500);
+        </script>
+        """,
+        height=0,
+    )
+
+
+# Page Config
+st.set_page_config(
+    page_title='Graph-Powered Fraud Intelligence System: AI-Powered Transaction Monitoring & Financial Crime Detection System',
+    page_icon='🛡️',
+    layout='wide',
+    initial_sidebar_state='expanded'
+)
 
 # --- ADD THIS BLOCK ---
 st.markdown(
@@ -34,23 +98,24 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-
-# Page Config
-st.set_page_config(
-    page_title='Graph-Powered Fraud Intelligence System: AI-Powered Transaction Monitoring & Financial Crime Detection System',
-    page_icon='🛡️',
-    layout='wide',
-    initial_sidebar_state='expanded'
-)
+if 'dark_theme_enabled' not in st.session_state:
+    st.session_state.dark_theme_enabled = True
 
 # Load custom styling
-ui.load_css()
+selected_theme = 'dark' if st.session_state.dark_theme_enabled else 'light'
+try:
+    ui.load_css(theme=selected_theme)
+except TypeError as exc:
+    if "unexpected keyword argument 'theme'" not in str(exc):
+        raise
+    ui.load_css()
+clear_custom_sidebar_toggle()
 
 # --- Sidebar Configuration ---
 with st.sidebar:
     st.image('webapp/logo.svg', width=60)
     st.title("Graphite AI")
+    st.toggle('Dark Theme', key='dark_theme_enabled')
     
     # Main Navigation
     app_mode = st.radio("System Mode", ["Dashboard", "Reports Explorer"], index=0)

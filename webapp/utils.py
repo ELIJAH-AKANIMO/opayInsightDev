@@ -180,26 +180,89 @@ Based on LightGBM, Graph, and **Deep Learning** analysis:
     return analysis
 
 
-def load_css():
-    """Injects custom CSS for a premium, glassmorphism look."""
+def load_css(theme="dark"):
+    """Injects custom CSS for the selected dashboard theme."""
+    themes = {
+        "dark": {
+            "bg": "#0f172a",
+            "card": "#1e293b",
+            "text_primary": "#f8fafc",
+            "text_secondary": "#94a3b8",
+            "accent_primary": "#38bdf8",
+            "accent_secondary": "#818cf8",
+            "sidebar": "#020617",
+            "surface": "#020617",
+            "border": "rgba(255, 255, 255, 0.1)",
+            "subtle_border": "rgba(255, 255, 255, 0.05)",
+            "button_secondary": "#475569",
+            "disabled_bg": "#1e293b",
+            "disabled_text": "#64748b",
+            "dialog_overlay": "rgba(15, 23, 42, 0.95)",
+            "dialog_header_start": "rgba(30, 41, 59, 0.8)",
+            "dialog_header_end": "rgba(15, 23, 42, 0.8)",
+            "skeleton_a": "rgba(255, 255, 255, 0.05)",
+            "skeleton_b": "rgba(255, 255, 255, 0.15)",
+            "shadow": "rgba(0, 0, 0, 0.3)",
+            "inset_shadow": "rgba(0,0,0,0.5)",
+        },
+        "light": {
+            "bg": "#f8fafc",
+            "card": "#ffffff",
+            "text_primary": "#0f172a",
+            "text_secondary": "#475569",
+            "accent_primary": "#0369a1",
+            "accent_secondary": "#4f46e5",
+            "sidebar": "#eef2f7",
+            "surface": "#ffffff",
+            "border": "rgba(15, 23, 42, 0.14)",
+            "subtle_border": "rgba(15, 23, 42, 0.08)",
+            "button_secondary": "#64748b",
+            "disabled_bg": "#e2e8f0",
+            "disabled_text": "#94a3b8",
+            "dialog_overlay": "rgba(248, 250, 252, 0.96)",
+            "dialog_header_start": "rgba(255, 255, 255, 0.9)",
+            "dialog_header_end": "rgba(226, 232, 240, 0.9)",
+            "skeleton_a": "rgba(15, 23, 42, 0.06)",
+            "skeleton_b": "rgba(15, 23, 42, 0.14)",
+            "shadow": "rgba(15, 23, 42, 0.12)",
+            "inset_shadow": "rgba(15,23,42,0.12)",
+        },
+    }
+    palette = themes.get(theme, themes["dark"])
+    theme_vars = f"""
+            --bg-color: {palette['bg']};
+            --card-bg: {palette['card']};
+            --text-primary: {palette['text_primary']};
+            --text-secondary: {palette['text_secondary']};
+            --accent-primary: {palette['accent_primary']};
+            --accent-secondary: {palette['accent_secondary']};
+            --sidebar-bg: {palette['sidebar']};
+            --surface-bg: {palette['surface']};
+            --border-color: {palette['border']};
+            --subtle-border-color: {palette['subtle_border']};
+            --disabled-bg: {palette['disabled_bg']};
+            --disabled-text: {palette['disabled_text']};
+            --dialog-overlay: {palette['dialog_overlay']};
+            --dialog-header-start: {palette['dialog_header_start']};
+            --dialog-header-end: {palette['dialog_header_end']};
+            --skeleton-a: {palette['skeleton_a']};
+            --skeleton-b: {palette['skeleton_b']};
+            --shadow-color: {palette['shadow']};
+            --inset-shadow-color: {palette['inset_shadow']};
+"""
     st.markdown(
         """
         <style>
         /* General Theme */
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-primary: #38bdf8; /* Sky 400 */
-            --accent-secondary: #818cf8; /* Indigo 400 */
+""" + theme_vars + """
             --danger: #ef4444; /* Red 500 */
             --success: #10b981; /* Emerald 500 */
             --warning: #f59e0b; /* Amber 500 */
             
             /* Accessible Button Colors */
             --btn-primary: #4f46e5;    /* Indigo 600 - WCAG AA compliant with white */
-            --btn-secondary: #475569;  /* Slate 600 - WCAG AA compliant with white */
+            --btn-secondary: """ + palette["button_secondary"] + """;  /* Slate 600 - WCAG AA compliant with white */
             --btn-danger: #dc2626;     /* Red 600 - WCAG AA compliant with white */
             --btn-hover-opacity: 0.9;
             --btn-active-scale: 0.98;
@@ -209,7 +272,7 @@ def load_css():
         [data-testid="stMetric"], 
         .metric-card {
             background-color: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--subtle-border-color);
             border-radius: 12px;
             padding: 1rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -218,8 +281,8 @@ def load_css():
         
         [data-testid="stMetric"]:hover {
             transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 
-                        0 10px 10px -5px rgba(0, 0, 0, 0.2),
+            box-shadow: 0 20px 25px -5px var(--shadow-color), 
+                        0 10px 10px -5px var(--shadow-color),
                         0 0 15px rgba(56, 189, 248, 0.3);
             border-color: rgba(56, 189, 248, 0.4);
         }
@@ -295,8 +358,8 @@ def load_css():
         /* Disabled State */
         div.stButton > button:disabled,
         div.stDownloadButton > button:disabled {
-            background-color: #1e293b !important;
-            color: #64748b !important;
+            background-color: var(--disabled-bg) !important;
+            color: var(--disabled-text) !important;
             cursor: not-allowed !important;
             opacity: 0.6 !important;
             box-shadow: none !important;
@@ -315,9 +378,9 @@ def load_css():
         .skeleton {
             background: linear-gradient(
                 90deg,
-                rgba(255, 255, 255, 0.05) 0px,
-                rgba(255, 255, 255, 0.15) 40px,
-                rgba(255, 255, 255, 0.05) 80px
+                var(--skeleton-a) 0px,
+                var(--skeleton-b) 40px,
+                var(--skeleton-a) 80px
             );
             background-size: 200px 100%;
             animation: skeleton-loading 1.5s ease-in-out infinite;
@@ -340,17 +403,17 @@ def load_css():
 
         /* ========== MODAL/DIALOG GLASSMORPHISM ========== */
         [data-testid="stDialog"] {
-            background-color: rgba(15, 23, 42, 0.95) !important;
+            background-color: var(--dialog-overlay) !important;
             backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
             animation: slide-in 0.3s ease-out;
         }
 
         /* Improved Dialog Header & Title Bar */
         [data-testid="stDialogHeader"] {
             padding: 1.5rem 1.5rem 1rem 1.5rem !important;
-            background: linear-gradient(to right, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8)) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            background: linear-gradient(to right, var(--dialog-header-start), var(--dialog-header-end)) !important;
+            border-bottom: 1px solid var(--border-color) !important;
             margin-bottom: 1rem !important;
             display: flex !important;
             align-items: center !important;
@@ -396,8 +459,8 @@ def load_css():
         
         [data-testid="stDialog"] div[role="dialog"] {
             background-color: var(--bg-color) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 25px 50px -12px var(--shadow-color);
             padding: 0 !important; /* Let children handle padding or header handle top */
         }
         
@@ -454,8 +517,8 @@ def load_css():
         }
 
         [data-testid="stSidebar"] {
-            background-color: #020617;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--subtle-border-color);
         }
         
         /* Reduce sidebar spacing */
@@ -469,7 +532,7 @@ def load_css():
 
         /* ========== SCAN LOADING & SCAN LOGS ========== */
         .scan-log-container {
-            background-color: #020617 !important;
+            background-color: var(--surface-bg) !important;
             border: 1px solid rgba(56, 189, 248, 0.2);
             border-radius: 8px;
             padding: 12px;
@@ -479,7 +542,7 @@ def load_css():
             max-height: 200px;
             overflow-y: auto;
             margin-top: 10px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: inset 0 2px 4px var(--inset-shadow-color);
         }
         .scan-log-entry {
             margin-bottom: 4px;
@@ -492,7 +555,7 @@ def load_css():
             font-weight: 600;
         }
         .scan-log-status {
-            color: #f8fafc;
+            color: var(--text-primary);
         }
         .scan-log-success { color: #10b981; }
         .scan-log-info { color: #38bdf8; }
@@ -519,7 +582,7 @@ def load_css():
         [data-testid="stMarkdownContainer"] h1 { font-size: 2.25rem; }
         [data-testid="stMarkdownContainer"] h2 { 
             font-size: 1.5rem; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            border-bottom: 1px solid var(--border-color); 
             padding-bottom: 0.5rem; 
             margin-top: 1.5rem; 
             margin-bottom: 1rem; 
@@ -550,7 +613,7 @@ def load_css():
         [data-testid="stDataFrame"] {
             border-radius: 8px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
         }
         
         thead tr th {
