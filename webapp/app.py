@@ -149,7 +149,7 @@ if app_mode == "Reports Explorer":
 # Data Loading
 df = None
 if use_sample:
-    sample_path = os.path.join('data', 'enriched_sample2.csv')
+    sample_path = os.environ.get('SAMPLE_DATA_PATH', os.path.join('data', 'enriched_sample.csv'))
     if os.path.exists(sample_path):
         df = pd.read_csv(sample_path)
     else:

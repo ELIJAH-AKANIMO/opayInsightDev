@@ -44,3 +44,8 @@ _pycache_/
 *.pyc
 data/
 models/
+
+# Keep the small bundled demo dataset available for Streamlit deploys.
+!data/
+data/*
+!data/enriched_sample.csv
