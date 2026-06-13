@@ -37,8 +37,8 @@ def read_transactions_csv(source):
     return pd.read_csv(source, dtype={'cc_num': 'string', 'card_id': 'string'})
 
 
-def clear_custom_sidebar_toggle():
-    """Remove stale custom sidebar state from earlier app versions."""
+def pin_static_sidebar():
+    """Keep Streamlit's native sidebar visible and prevent accidental collapse."""
     components.html(
         """
         <script>
@@ -49,6 +49,38 @@ def clear_custom_sidebar_toggle():
         doc.getElementById('graphite-sidebar-opener-style')?.remove();
         doc.body.classList.remove('graphite-sidebar-closed');
         window.parent.localStorage.removeItem('graphite-sidebar-closed');
+
+        const styleId = 'graphite-static-sidebar-style';
+        if (!doc.getElementById(styleId)) {
+            const style = doc.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                [data-testid="stSidebar"] {
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    transform: translateX(0) !important;
+                    min-width: 280px !important;
+                    width: 280px !important;
+                    flex-shrink: 0 !important;
+                }
+
+                [data-testid="stSidebar"] > div {
+                    min-width: 280px !important;
+                    width: 280px !important;
+                }
+
+                [data-testid="collapsedControl"],
+                [data-testid="stSidebarCollapseButton"],
+                button[aria-label="Close sidebar"],
+                button[title="Close sidebar"],
+                button[aria-label="Open sidebar"],
+                button[title="Open sidebar"] {
+                    display: none !important;
+                    pointer-events: none !important;
+                }
+            `;
+            doc.head.appendChild(style);
+        }
 
         const sidebarIsOpen = () => {
             const sidebar = doc.querySelector('[data-testid="stSidebar"]');
@@ -86,8 +118,42 @@ def clear_custom_sidebar_toggle():
             }
         };
 
+        const hideSidebarControls = () => {
+            const controls = Array.from(doc.querySelectorAll('button, [role="button"]'));
+            controls.forEach((control) => {
+                const label = [
+                    control.getAttribute('aria-label'),
+                    control.getAttribute('title'),
+                    control.innerText
+                ].filter(Boolean).join(' ').toLowerCase();
+
+                if (label.includes('sidebar') && (label.includes('open') || label.includes('close') || label.includes('collapse'))) {
+                    control.style.display = 'none';
+                    control.style.pointerEvents = 'none';
+                }
+            });
+        };
+
+        const enforceStaticSidebar = () => {
+            restoreNativeSidebar();
+            hideSidebarControls();
+        };
+
         window.setTimeout(restoreNativeSidebar, 100);
         window.setTimeout(restoreNativeSidebar, 500);
+        window.setTimeout(enforceStaticSidebar, 100);
+        window.setTimeout(enforceStaticSidebar, 500);
+        window.setTimeout(enforceStaticSidebar, 1200);
+
+        if (!window.graphiteStaticSidebarObserver) {
+            window.graphiteStaticSidebarObserver = new MutationObserver(enforceStaticSidebar);
+            window.graphiteStaticSidebarObserver.observe(doc.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class', 'aria-expanded']
+            });
+        }
         </script>
         """,
         height=0,
@@ -106,11 +172,31 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* We use !important to make sure your 20% override wins */
-    .st-emotion-cache-1l0wbpp svg {
-        width: 40% !important;
-        max-width: 40% !important;
-        height: auto !important;
+        /* Keep the native Streamlit sidebar pinned open. */
+        [data-testid="stSidebar"] {
+            visibility: visible !important;
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+            min-width: 280px !important;
+            width: 280px !important;
+            flex-shrink: 0 !important;
+        }
+
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"],
+        button[aria-label="Close sidebar"],
+        button[title="Close sidebar"],
+        button[aria-label="Open sidebar"],
+        button[title="Open sidebar"] {
+            display: none !important;
+            pointer-events: none !important;
+        }
+
+        /* We use !important to make sure your 20% override wins */
+        .st-emotion-cache-1l0wbpp svg {
+            width: 40% !important;
+            max-width: 40% !important;
+            height: auto !important;
     }
     </style>
     """,
@@ -128,7 +214,7 @@ except TypeError as exc:
     if "unexpected keyword argument 'theme'" not in str(exc):
         raise
     ui.load_css()
-clear_custom_sidebar_toggle()
+pin_static_sidebar()
 
 # --- Sidebar Configuration ---
 with st.sidebar:

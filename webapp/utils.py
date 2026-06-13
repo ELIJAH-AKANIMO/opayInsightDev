@@ -519,6 +519,27 @@ def load_css(theme="dark"):
         [data-testid="stSidebar"] {
             background-color: var(--sidebar-bg);
             border-right: 1px solid var(--subtle-border-color);
+            visibility: visible !important;
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+            min-width: 280px !important;
+            width: 280px !important;
+            flex-shrink: 0 !important;
+        }
+
+        [data-testid="stSidebar"] > div {
+            min-width: 280px !important;
+            width: 280px !important;
+        }
+
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"],
+        button[aria-label="Close sidebar"],
+        button[title="Close sidebar"],
+        button[aria-label="Open sidebar"],
+        button[title="Open sidebar"] {
+            display: none !important;
+            pointer-events: none !important;
         }
         
         /* Reduce sidebar spacing */
