@@ -12,3 +12,4 @@ lightgbm
 pytest
 altair
 graphviz
+streamlit-agraph

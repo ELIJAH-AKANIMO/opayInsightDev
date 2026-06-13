@@ -20,6 +20,7 @@ lightgbm
 shap>=0.44
 altair
 graphviz
+streamlit-agraph
 
 # Deep Learning (PyTorch)
 torch>=2.0.0

@@ -744,7 +744,37 @@ def render_fraud_network(df, focused_node=None, threshold=0.8):
     try:
         from streamlit_agraph import agraph, Node, Edge, Config
     except ImportError:
-        st.error("Please install streamlit-agraph: pip install streamlit-agraph")
+        try:
+            from webapp.ui_helpers import clean_merchant_name
+        except ModuleNotFoundError:
+            from ui_helpers import clean_merchant_name
+
+        def dot_escape(value):
+            return str(value).replace("\\", "\\\\").replace('"', '\\"')
+
+        graph_df = df.head(100)
+        lines = [
+            "graph FraudNetwork {",
+            '  graph [bgcolor="transparent", layout=neato, overlap=false, splines=true];',
+            '  node [style=filled, fontname="Arial", fontcolor="white", color="#334155"];',
+            '  edge [fontname="Arial", color="#94a3b8", fontcolor="#cbd5e1"];',
+        ]
+
+        for idx, row in graph_df.iterrows():
+            card = str(row['cc_num'])[-4:]
+            merch = str(row['merchant'])
+            merch_clean = clean_merchant_name(merch)
+            risk = float(row.get('proba', 0))
+            card_id = f"card_{idx}_{dot_escape(card)}"
+            merch_id = f"merchant_{idx}"
+
+            lines.append(f'  "{card_id}" [label="Card {dot_escape(card)}", fillcolor="#fb7185", shape=circle];')
+            lines.append(f'  "{merch_id}" [label="{dot_escape(merch_clean[:24])}", fillcolor="#34d399", shape=box];')
+            lines.append(f'  "{card_id}" -- "{merch_id}" [label="{risk:.2f}"];')
+
+        lines.append("}")
+        st.graphviz_chart("\n".join(lines), width="stretch")
+        st.caption("Rendered with Graphviz fallback because streamlit-agraph is unavailable in this environment.")
         return
 
     nodes = []
