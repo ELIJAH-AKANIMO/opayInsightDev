@@ -54,6 +54,27 @@ python -m uvicorn api.streaming:app --reload --port 8001
 - **`python-multipart` error**: If you see an upload error, ensure the package is installed: `pip install python-multipart`.
 - **Port 8001 in use**: If the API fails to bind, kill the existing process or check if another instance is running.
 
+### 5. Render Deployment
+
+Render web services must bind to the injected `$PORT` on `0.0.0.0`.
+
+Deploy the API with the included `render.yaml`, or use these manual settings:
+
+```bash
+Build Command: pip install -r requirements.txt
+Start Command: python -m uvicorn api.app:app --host 0.0.0.0 --port $PORT
+Health Check Path: /health
+```
+
+Deploy the Streamlit dashboard as a separate Render web service with:
+
+```bash
+Build Command: pip install -r requirements.txt
+Start Command: python -m streamlit run webapp/app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+```
+
+If you created the service manually in Render, update the Start Command in the Render dashboard. Existing manual services do not automatically adopt changes from `render.yaml`.
+
 ---
 
 ## 🧠 System Architecture
