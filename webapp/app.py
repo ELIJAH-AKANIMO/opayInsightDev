@@ -32,6 +32,11 @@ def get_api_base_url():
     return configured_url.rstrip("/")
 
 
+def read_transactions_csv(source):
+    """Read transaction CSVs with identifier columns preserved as text."""
+    return pd.read_csv(source, dtype={'cc_num': 'string', 'card_id': 'string'})
+
+
 def clear_custom_sidebar_toggle():
     """Remove stale custom sidebar state from earlier app versions."""
     components.html(
@@ -165,12 +170,12 @@ df = None
 if use_sample:
     sample_path = os.environ.get('SAMPLE_DATA_PATH', os.path.join('data', 'enriched_sample2.csv'))
     if os.path.exists(sample_path):
-        df = pd.read_csv(sample_path)
+        df = read_transactions_csv(sample_path)
     else:
         st.error(f"Sample file not found at `{sample_path}`.")
 elif uploaded_file:
     try:
-        df = pd.read_csv(uploaded_file)
+        df = read_transactions_csv(uploaded_file)
         st.toast('CSV uploaded successfully.', icon='✅')
     except Exception as e:
         st.error(f"Error reading file: {e}")
