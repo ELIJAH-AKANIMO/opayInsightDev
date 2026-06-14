@@ -8,6 +8,15 @@ import io
 import json
 import numpy as np
 import traceback
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+import httpx
+import logging
+import os as _os
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api.app")
 
 # Ensure multipart support is available for form uploads
 try:
@@ -17,7 +26,41 @@ except Exception:
 
 from pipeline.run_pipeline import build_features, sanitize_columns
 
-app = FastAPI(title="Fraud Detection API")
+def self_ping_job():
+    url = _os.environ.get("API_BASE_URL") or _os.environ.get("RENDER_EXTERNAL_URL")
+    if not url:
+        port = _os.environ.get("PORT", "8000")
+        url = f"http://localhost:{port}"
+    
+    if not url.endswith("/health"):
+        url = url.rstrip("/") + "/health"
+        
+    try:
+        logger.info(f"Sending self-ping to: {url}")
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(url)
+            logger.info(f"Self-ping response: status={resp.status_code}, content={resp.text}")
+    except Exception as e:
+        logger.error(f"Error during self-ping: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup phase
+    load_models()
+    
+    # Configure and start BackgroundScheduler
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(self_ping_job, 'interval', minutes=5, id='self_ping_job')
+    scheduler.start()
+    logger.info("BackgroundScheduler started for self-ping.")
+    
+    yield
+    
+    # Shutdown phase
+    scheduler.shutdown()
+    logger.info("BackgroundScheduler shut down cleanly.")
+
+app = FastAPI(title="Fraud Detection API", lifespan=lifespan)
 
 # load model & scaler at startup
 MODEL_PATH = 'models/lgb_rolling_graph_struct_full.joblib'
@@ -79,7 +122,6 @@ def fallback_probabilities(df: pd.DataFrame) -> np.ndarray:
     return np.clip(probs, 0.01, 0.99)
 
 
-@app.on_event('startup')
 def load_models():
     global MODEL, SCALER, MODEL_FEATURES
     try:
@@ -211,7 +253,7 @@ def _map_graph_features_single_row(row: dict, graph_dicts: dict):
     return out
 
 
-def align_and_prepare_single(df: pd.DataFrame, trim: bool | None = None):
+def align_and_prepare_single(df: pd.DataFrame, trim: Optional[bool] = None):
     """Lightweight alignment for single transaction scoring.
     Adds quick node-level features using preloaded GRAPH_DICTS and applies sanitization & scaling.
 
@@ -312,7 +354,7 @@ async def score_csv(file: Optional[UploadFile] = File(None), explain: bool = Que
 
 
 @app.post('/score/tx')
-async def score_single_tx(payload: dict, explain: bool = Query(False), trim: bool | None = Query(None)):
+async def score_single_tx(payload: dict, explain: bool = Query(False), trim: Optional[bool] = Query(None)):
     """Score a single transaction JSON object and return a single result. Set explain=true to get SHAP values for the transaction.
 
     Optional query param `trim` overrides the configured minimal-feature trimming behavior (trim=true|false).
@@ -372,7 +414,7 @@ async def root():
 @app.get('/health')
 async def health():
     """Health check endpoint."""
-    return JSONResponse(content={'status': 'ok', 'model_loaded': MODEL is not None})
+    return JSONResponse(content={'status': 'alive'})
 
 
 @app.get('/config')

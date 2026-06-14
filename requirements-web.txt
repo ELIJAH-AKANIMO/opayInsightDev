@@ -13,3 +13,6 @@ pytest
 altair
 graphviz
 streamlit-agraph
+apscheduler
+httpx
+
