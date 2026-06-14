@@ -233,10 +233,8 @@ with st.sidebar:
         threshold = st.slider('Risk Threshold', 0.0, 1.0, 0.5, 0.01, help="Transactions with a score above this value are flagged.")
         top_n = st.number_input('Top Alerts to Show', 1, 500, 50)
         
-        st.markdown("### Explainability")
-        explain = st.toggle('Enable SHAP Explanations', True)
-        if explain:
-            num_explain = st.number_input('Max rows to explain', 1, 20, 5)
+        explain = True
+        num_explain = min(max(int(top_n), 1), 100)
         
         st.markdown("### Data Source")
         use_sample = st.checkbox('Use Sample Data', True)
@@ -345,10 +343,11 @@ def run_analysis(df_input):
         api_url = f"{api_base_url}/score"
         try:
             files = {'file': ('upload.csv', df.to_csv(index=False).encode())}
-            params = {'explain': str(explain).lower(), 'top_k': str(top_n)}
+            params = {'explain': 'true', 'top_k': str(num_explain)}
             
             add_log("Streaming data to remote neural engine...", "info")
-            resp = requests.post(api_url, files=files, params=params, timeout=60)
+            with st.spinner("Calculating AI Explainability drivers..."):
+                resp = requests.post(api_url, files=files, params=params, timeout=60)
             
             if resp.status_code == 200:
                 add_log("API cluster response received. Decoding packet...", "success")
@@ -423,15 +422,16 @@ def run_analysis(df_input):
                 status_container.markdown("### 📊 Calculating SHAP Explanations...")
                 add_log("Computing feature attributions (TreeExplainer)...", "info")
                 try:
-                    import shap
-                    explainer = shap.TreeExplainer(model)
-                    idxs = np.argsort(-probs)[:int(num_explain)]
-                    vals = explainer.shap_values(X.iloc[idxs])
+                    with st.spinner("Calculating AI Explainability drivers..."):
+                        import shap
+                        explainer = shap.TreeExplainer(model)
+                        idxs = np.argsort(-probs)[:int(num_explain)]
+                        vals = explainer.shap_values(X.iloc[idxs])
                     if isinstance(vals, (list, tuple)): 
                         sv = np.array(vals[1]) if len(vals) > 1 else np.array(vals[0])
                     else: 
                         sv = np.array(vals)
-                    shap_data = {'idxs': idxs.tolist(), 'values': sv, 'columns': X.columns.tolist()}
+                    shap_data = {'idxs': idxs.tolist(), 'values': sv.tolist(), 'columns': X.columns.tolist()}
                     add_log("SHAP values synchronized.", "success")
                 except Exception as e:
                     st.warning(f"SHAP explanation failed: {e}")
