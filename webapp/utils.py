@@ -1268,17 +1268,17 @@ def render_interactive_risk_dashboard(df, top_n=50):
     if 'selected_severity' not in st.session_state:
         st.session_state.selected_severity = None # High | Medium | Low | All
 
-    # Calculate Data Subsets
-    # df is the full dataset (or whatever is passed)
-    # subset logic:
-    high_risk = df[df['proba'] > 0.8]
-    med_risk = df[(df['proba'] > 0.5) & (df['proba'] <= 0.8)]
-    low_risk = df[df['proba'] <= 0.5]
+    # Calculate data subsets from precomputed risk labels.
+    critical_df = df[df['risk_level'] == "Critical"] if 'risk_level' in df.columns else df[df['proba'] >= 0.90]
+    high_df = df[df['risk_level'] == "High"] if 'risk_level' in df.columns else df[(df['proba'] >= 0.75) & (df['proba'] < 0.90)]
+    elevated_df = df[df['risk_level'] == "Elevated"] if 'risk_level' in df.columns else df[(df['proba'] >= 0.50) & (df['proba'] < 0.75)]
+    normal_df = df[df['risk_level'] == "Normal"] if 'risk_level' in df.columns else df[df['proba'] < 0.50]
     
     # Counts
-    count_high = len(high_risk)
-    count_med = len(med_risk)
-    count_low = len(low_risk)
+    count_critical = len(critical_df)
+    count_high = len(high_df)
+    count_elevated = len(elevated_df)
+    count_normal = len(normal_df)
     count_all = len(df)
     
     # Header
@@ -1294,36 +1294,43 @@ def render_interactive_risk_dashboard(df, top_n=50):
         # We use columns and standard buttons, styled to look like cards if possible, 
         # or just functional buttons. User asked for "BUTTON... HIGH, MEDIUM, LOW and ALL"
         
-        b1, b2, b3, b4 = st.columns(4)
+        b1, b2, b3, b4, b5 = st.columns(5)
         
         with b1:
             # High Risk
-            st.error(f"CRITICAL (High)\n# {count_high}")
-            if st.button("🔴 View High Risk", use_container_width=True):
-                st.session_state.selected_severity = 'High'
+            st.error(f"CRITICAL\n# {count_critical}")
+            if st.button("View Critical", use_container_width=True):
+                st.session_state.selected_severity = 'Critical'
                 st.session_state.dash_view = 'detail'
                 st.rerun()
         
         with b2:
             # Medium Risk
-            st.warning(f"ELEVATED (Medium)\n# {count_med}")
-            if st.button("🟠 View Medium Risk", use_container_width=True):
-                st.session_state.selected_severity = 'Medium'
+            st.warning(f"HIGH\n# {count_high}")
+            if st.button("View High", use_container_width=True):
+                st.session_state.selected_severity = 'High'
                 st.session_state.dash_view = 'detail'
                 st.rerun()
                 
         with b3:
             # Low Risk
-            st.success(f"NORMAL (Low)\n# {count_low}")
-            if st.button("🟢 View Low Risk", use_container_width=True):
-                st.session_state.selected_severity = 'Low'
+            st.warning(f"ELEVATED\n# {count_elevated}")
+            if st.button("View Elevated", use_container_width=True):
+                st.session_state.selected_severity = 'Elevated'
                 st.session_state.dash_view = 'detail'
                 st.rerun()
 
         with b4:
+            st.success(f"NORMAL\n# {count_normal}")
+            if st.button("View Normal", use_container_width=True):
+                st.session_state.selected_severity = 'Normal'
+                st.session_state.dash_view = 'detail'
+                st.rerun()
+
+        with b5:
             # All
             st.info(f"TOTAL LOGS\n# {count_all}")
-            if st.button("⚪ View All Logs", use_container_width=True):
+            if st.button("View All Logs", use_container_width=True):
                 st.session_state.selected_severity = 'All'
                 st.session_state.dash_view = 'detail'
                 st.rerun()
@@ -1345,19 +1352,24 @@ def render_interactive_risk_dashboard(df, top_n=50):
                 st.rerun()
         
         # Filter Data
-        if selected_sev == 'High':
-            display_df = high_risk.copy()
-            title_text = f"🔴 High Risk Transactions ({len(display_df)})"
-        elif selected_sev == 'Medium':
-            display_df = med_risk.copy()
-            title_text = f"🟠 Medium Risk Transactions ({len(display_df)})"
-        elif selected_sev == 'Low':
-            display_df = low_risk.copy()
-            title_text = f"🟢 Low Risk Transactions ({len(display_df)})"
+        if selected_sev == 'Critical':
+            display_df = critical_df.copy()
+            title_text = f"Critical Risk Transactions ({len(display_df)})"
+        elif selected_sev == 'High':
+            display_df = high_df.copy()
+            title_text = f"High Risk Transactions ({len(display_df)})"
+        elif selected_sev == 'Elevated':
+            display_df = elevated_df.copy()
+            title_text = f"Elevated Risk Transactions ({len(display_df)})"
         else:
             display_df = df.copy()
-            title_text = f"⚪ All Transactions ({len(display_df)})"
+            title_text = f"All Transactions ({len(display_df)})"
         
+        if selected_sev == 'Normal':
+            display_df = normal_df.copy()
+        if selected_sev in {'Critical', 'High', 'Elevated', 'Normal'}:
+            title_text = f"{selected_sev} Risk Transactions ({len(display_df)})"
+
         # Show empty state if no data
         if display_df.empty:
             st.markdown(f"### {title_text}")
@@ -1414,7 +1426,8 @@ def render_interactive_risk_dashboard(df, top_n=50):
         # Given it's a "Top 50" dashboard originally, we might want to sort by risk 
         # even within Low/Med categories.
         
-        display_df = display_df.sort_values('proba', ascending=False).head(100) # Safety cap
+        sort_col = 'hybrid_risk' if 'hybrid_risk' in display_df.columns else 'proba'
+        display_df = display_df.sort_values(sort_col, ascending=False).head(100) # Safety cap
         
         # Render Table if data exists
         if not display_df.empty:
@@ -1430,6 +1443,10 @@ def render_interactive_risk_dashboard(df, top_n=50):
             display_df[['Risk Level', 'Action']] = display_df['proba'].apply(
                 lambda x: pd.Series(get_risk_analysis(x))
             )
+            if 'risk_level' in display_df.columns:
+                display_df['Risk Level'] = display_df['risk_level']
+            if 'recommended_action' in display_df.columns:
+                display_df['Action'] = display_df['recommended_action']
             
             if 'orig_index' not in display_df.columns:
                 display_df['orig_index'] = display_df.index
@@ -1448,7 +1465,7 @@ def render_interactive_risk_dashboard(df, top_n=50):
             )
             
             # Columns
-            cols_to_show = ['orig_index', 'Risk Level', 'Action', 'proba', 'amt', 'merchant', 'is_fraud', 'category']
+            cols_to_show = ['orig_index', 'Risk Level', 'Action', 'hybrid_risk', 'lgb_probability', 'ae_anomaly_score', 'amt', 'merchant', 'is_fraud', 'category']
             final_df = display_df[[c for c in cols_to_show if c in display_df.columns]].copy()
             
             
@@ -1468,7 +1485,9 @@ def render_interactive_risk_dashboard(df, top_n=50):
                     "orig_index": st.column_config.TextColumn("ID"),
                     "Risk Level": st.column_config.TextColumn("Status"),
                     "Action": st.column_config.TextColumn("Recommended Action"),
-                    "proba": st.column_config.ProgressColumn("Score", format="%.2f", min_value=0, max_value=1),
+                    "hybrid_risk": st.column_config.ProgressColumn("Hybrid Risk", format="%.2f", min_value=0, max_value=1),
+                    "lgb_probability": st.column_config.ProgressColumn("LGBM Probability", format="%.2f", min_value=0, max_value=1),
+                    "ae_anomaly_score": st.column_config.ProgressColumn("AE Anomaly", format="%.2f", min_value=0, max_value=1),
                     "amt": st.column_config.NumberColumn("Amount", format="$%.2f"),
                     "merchant": st.column_config.TextColumn("Merchant"),
                     "category": st.column_config.TextColumn("Category")

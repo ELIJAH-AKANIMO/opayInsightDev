@@ -37,6 +37,59 @@ def read_transactions_csv(source):
     return pd.read_csv(source, dtype={'cc_num': 'string', 'card_id': 'string'})
 
 
+def get_recommended_action(score):
+    score_val = float(score)
+    if score_val >= 0.90:
+        return "Escalate to Fraud Team Immediately"
+    if score_val >= 0.75:
+        return "Suspend Account Pending Review"
+    if score_val >= 0.60:
+        return "Flag for Manual Review"
+    if score_val >= 0.50:
+        return "Monitor Closely"
+    return "Clear - No Action Needed"
+
+
+def get_risk_label(score):
+    score_val = float(score)
+    if score_val >= 0.90:
+        return "Critical"
+    if score_val >= 0.75:
+        return "High"
+    if score_val >= 0.50:
+        return "Elevated"
+    return "Normal"
+
+
+def apply_risk_outputs(results_df):
+    """Normalize model outputs into the columns consumed by the dashboard."""
+    if results_df is None:
+        return results_df
+
+    if 'proba' not in results_df.columns:
+        return results_df
+
+    results_df = results_df.copy()
+    results_df['lgb_probability'] = results_df['proba'].astype(float)
+
+    if 'anomaly_score' in results_df.columns:
+        results_df['ae_anomaly_score'] = results_df['anomaly_score'].astype(float)
+    else:
+        results_df['ae_anomaly_score'] = 0.0
+        results_df['anomaly_score'] = 0.0
+
+    results_df['hybrid_risk'] = (
+        0.6 * results_df['lgb_probability'].astype(float)
+    ) + (
+        0.4 * results_df['ae_anomaly_score'].astype(float)
+    )
+    results_df['is_fraud'] = (results_df['hybrid_risk'] >= 0.5).astype(int)
+    results_df['recommended_action'] = results_df['hybrid_risk'].apply(get_recommended_action)
+    results_df['risk_level'] = results_df['hybrid_risk'].apply(get_risk_label)
+    results_df['pred'] = results_df['is_fraud']
+    return results_df
+
+
 def pin_static_sidebar():
     """Keep Streamlit's native sidebar visible and prevent accidental collapse."""
     components.html(
@@ -364,6 +417,7 @@ def run_analysis(df_input):
                     results_df['anomaly_score'] = preds_df['anomaly_score']
                 if 'hybrid_risk' in preds_df.columns:
                     results_df['hybrid_risk'] = preds_df['hybrid_risk']
+                results_df = apply_risk_outputs(results_df)
 
                 if 'shap' in data:
                     shap_data = data['shap']
@@ -467,14 +521,14 @@ def run_analysis(df_input):
             add_log("Behavioral anomaly scores calculated.", "success")
             
             results_df['anomaly_score'] = dl_scores
-            results_df['hybrid_risk'] = (results_df['proba'] * 0.6) + (results_df['anomaly_score'] * 0.4)
+            results_df = apply_risk_outputs(results_df)
             add_log("Hybrid Intelligence scoring complete.", "success")
-            
-       	except Exception as e:
+
+        except Exception as e:
             st.warning(f"Deep Learning Layer inactive: {e}")
             add_log("DL Layer offline - using fallback scoring.", "warning")
             results_df['anomaly_score'] = 0.0
-            results_df['hybrid_risk'] = results_df['proba']
+            results_df = apply_risk_outputs(results_df)
 
     # Finalize
     progress_bar.progress(100)
@@ -492,7 +546,8 @@ def run_analysis(df_input):
     if error_msg:
         st.error(error_msg)
     elif results_df is not None:
-         # Success! Store in session state to persist after interactions
+        results_df = apply_risk_outputs(results_df)
+        # Success! Store in session state to persist after interactions
         st.session_state['last_results'] = results_df
         st.session_state['shap_data'] = shap_data
         st.session_state['last_run_time'] = elapsed
